@@ -6,12 +6,15 @@ import json
 import numpy as np
 
 # Master Function that calls all the functions
+
+# TODO make a function that downloads the patches upon request and then performs this preprocessing
 def create_coco_json(df, img_dir) -> None:
     contents = {'categories' : [], 'images' : [], 'annotations' : []}
     for i in tqdm(range(len(df))):
+        # TODO implement the selection of categories that are relevant to the fine tuning
         row = df.iloc[i, :]
         contents['images'].append(extract_img(row, img_dir))
-        contents['annotations'] += extract_ann(row)
+        contents['annotations'] =  contents['annotations'] + extract_ann(row)
         for obj in row['anns_info']:
             cat_obj = extract_cat(obj)
             if cat_obj not in contents['categories']:
@@ -50,13 +53,14 @@ def extract_cat(obj) -> dict:
 
 def extract_ann(row) -> list[dict]:
     # Converting bounding boxes from xyxy to xywh format
-    for j in range(len(row.anns_info)):
-        box = np.array(row.anns_info[j]['bbox'])
-        box[2] -= box[0]
-        box[3] -= box[1]
-    return row.anns_info
+    anns_obj = row.anns_info
+    for j in range(len(anns_obj)):
+        anns_obj[j]['bbox'] = anns_obj[j]['bbox'].tolist()
+        anns_obj[j]['bbox'][2] -= anns_obj[j]['bbox'][0]
+        anns_obj[j]['bbox'][3] -= anns_obj[j]['bbox'][1]
+    return anns_obj.tolist()
 
 if __name__ == '__main__':
     dataset = load_dataset('jxu124/objects365', split = 'train')
     df = dataset.to_pandas()
-    create_coco_json(df, '/Users/yash/ML Projects/TempFolder/annotations.json')
+    create_coco_json(df.head(1000), '/Users/yash/ML Projects/TempFolder/annotations.json')
